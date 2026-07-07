@@ -34,39 +34,30 @@ notepad pretraining_objectives.py
 ### Step 2: Write the Pretraining Exploration Code
 
 ```python
-import requests
-import json
+from openai import OpenAI
 import time
 
 # Azure OpenAI Configuration
-AZURE_ENDPOINT = "YOUR_AZURE_ENDPOINT"
-API_KEY = "YOUR_API_KEY"
-DEPLOYMENT_NAME = "YOUR_DEPLOYMENT_NAME"
+endpoint = "YOUR_ENDPOINT"
+deployment_name = "YOUR_DEPLOYMENT_NAME"
+api_key = "YOUR_API_KEY"
 
-def call_azure_openai(prompt, max_tokens=50, temperature=0.7):
+client = OpenAI(base_url=endpoint, api_key=api_key)
+
+def call_azure_openai(prompt, max_completion_tokens=50, temperature=0.7):
     """Call Azure OpenAI API"""
-    url = f"{AZURE_ENDPOINT}/openai/deployments/{DEPLOYMENT_NAME}/chat/completions?api-version=2024-02-15-preview"
-    
-    headers = {
-        "Content-Type": "application/json",
-        "api-key": API_KEY
-    }
-    
-    data = {
-        "messages": [
-            {"role": "user", "content": prompt}
-        ],
-        "max_tokens": max_tokens,
-        "temperature": temperature
-    }
-    
-    response = requests.post(url, headers=headers, json=data)
-    
-    if response.status_code == 200:
-        result = response.json()
-        return result['choices'][0]['message']['content']
-    else:
-        return f"Error: {response.status_code}"
+    try:
+        response = client.chat.completions.create(
+            model=deployment_name,
+            messages=[
+                {"role": "user", "content": prompt}
+            ],
+            max_completion_tokens=max_completion_tokens,
+            temperature=temperature
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        return f"Error: {e}"
 
 def demo_autoregressive_lm():
     """
@@ -90,7 +81,7 @@ def demo_autoregressive_lm():
     
     for prefix in prefixes:
         print(f"\nInput: '{prefix}'")
-        response = call_azure_openai(prefix, max_tokens=5, temperature=0)
+        response = call_azure_openai(prefix, max_completion_tokens=5, temperature=0)
         print(f"Model predicts: '{response}'")
     
     print("\n💡 Key Points:")
@@ -122,7 +113,7 @@ def demo_masked_lm():
     for masked, answer in masked_sentences:
         prompt = f"Fill in the blank with ONE word: '{masked}'\nAnswer with just the word."
         print(f"\nInput: '{masked}'")
-        response = call_azure_openai(prompt, max_tokens=5, temperature=0)
+        response = call_azure_openai(prompt, max_completion_tokens=5, temperature=0)
         print(f"Model predicts: '{response.strip()}'")
         print(f"Expected: '{answer}'")
     
@@ -152,21 +143,21 @@ def demo_what_llms_learn():
     # Facts
     print("--- B. World Knowledge (Facts) ---")
     prompt = "Who wrote Romeo and Juliet? Answer with just the name."
-    response = call_azure_openai(prompt, max_tokens=10)
+    response = call_azure_openai(prompt, max_completion_tokens=10)
     print(f"Question: Who wrote Romeo and Juliet?")
     print(f"Model: {response}\n")
     
     # Reasoning Patterns
     print("--- C. Reasoning Patterns ---")
     prompt = "If all cats are animals, and Tom is a cat, is Tom an animal? Answer: Yes or No with brief reasoning."
-    response = call_azure_openai(prompt, max_tokens=50)
+    response = call_azure_openai(prompt, max_completion_tokens=50)
     print(f"Question: Logical reasoning test")
     print(f"Model: {response}\n")
     
     # Common Sense
     print("--- D. Common Sense ---")
     prompt = "If I drop a glass on a hard floor, what typically happens? Answer briefly."
-    response = call_azure_openai(prompt, max_tokens=30)
+    response = call_azure_openai(prompt, max_completion_tokens=30)
     print(f"Question: What happens if you drop glass on hard floor?")
     print(f"Model: {response}\n")
     
@@ -253,14 +244,14 @@ def demo_knowledge_cutoff():
     
     # Historical event (should know)
     prompt1 = "Who was the president of the United States in 2020? Just the name."
-    response1 = call_azure_openai(prompt1, max_tokens=10)
+    response1 = call_azure_openai(prompt1, max_completion_tokens=10)
     print(f"\nHistorical question: {prompt1}")
     print(f"Model: {response1}")
     print("✓ Model knows this (within training data)")
     
     # Check model's knowledge cutoff
     prompt2 = "What is your knowledge cutoff date? Answer briefly."
-    response2 = call_azure_openai(prompt2, max_tokens=30)
+    response2 = call_azure_openai(prompt2, max_completion_tokens=30)
     print(f"\nMeta question: What is your knowledge cutoff?")
     print(f"Model: {response2}")
     

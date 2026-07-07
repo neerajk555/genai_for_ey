@@ -38,14 +38,15 @@ notepad model_selection.py
 ### Step 2: Write the Model Selection Tool
 
 ```python
-import requests
-import json
+from openai import OpenAI
 import time
 
 # Azure OpenAI Configuration
-AZURE_ENDPOINT = "YOUR_AZURE_ENDPOINT"
-API_KEY = "YOUR_API_KEY"
-DEPLOYMENT_NAME = "YOUR_DEPLOYMENT_NAME"
+endpoint = "YOUR_ENDPOINT"
+deployment_name = "YOUR_DEPLOYMENT_NAME"
+api_key = "YOUR_API_KEY"
+
+client = OpenAI(base_url=endpoint, api_key=api_key)
 
 def demo_model_landscape():
     """

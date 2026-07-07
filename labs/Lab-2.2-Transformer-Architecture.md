@@ -36,14 +36,15 @@ notepad transformer_architecture.py
 ### Step 2: Write the Attention Exploration Code
 
 ```python
-import requests
-import json
+from openai import OpenAI
 import numpy as np
 
 # Azure OpenAI Configuration
-AZURE_ENDPOINT = "YOUR_AZURE_ENDPOINT"
-API_KEY = "YOUR_API_KEY"
-DEPLOYMENT_NAME = "YOUR_DEPLOYMENT_NAME"
+endpoint = "YOUR_ENDPOINT"
+deployment_name = "YOUR_DEPLOYMENT_NAME"
+api_key = "YOUR_API_KEY"
+
+client = OpenAI(base_url=endpoint, api_key=api_key)
 
 def simple_attention_demo():
     """
@@ -89,28 +90,20 @@ def call_azure_openai_with_attention(prompt, max_tokens=100):
     """
     Call Azure OpenAI and demonstrate token-by-token generation
     """
-    url = f"{AZURE_ENDPOINT}/openai/deployments/{DEPLOYMENT_NAME}/chat/completions?api-version=2024-02-15-preview"
-    
-    headers = {
-        "Content-Type": "application/json",
-        "api-key": API_KEY
-    }
-    
-    data = {
-        "messages": [
-            {"role": "user", "content": prompt}
-        ],
-        "max_tokens": max_tokens,
-        "temperature": 0.7
-    }
-    
-    response = requests.post(url, headers=headers, json=data)
-    
-    if response.status_code == 200:
-        result = response.json()
-        return result['choices'][0]['message']['content'], result.get('usage', {})
-    else:
-        return f"Error: {response.status_code}", {}
+    try:
+        response = client.chat.completions.create(
+            model=deployment_name,
+            messages=[
+                {"role": "user", "content": prompt}
+            ],
+            max_completion_tokens=100,
+            temperature=0.7
+        )
+        
+        answer = response.choices[0].message.content
+        return answer, response.usage.model_dump() if hasattr(response, 'usage') else {}
+    except Exception as e:
+        return f"Error: {e}", {}
 
 def multi_head_attention_demo():
     """

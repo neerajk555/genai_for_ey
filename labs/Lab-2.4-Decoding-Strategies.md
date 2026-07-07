@@ -37,44 +37,35 @@ notepad decoding_strategies.py
 ### Step 2: Write the Decoding Exploration Code
 
 ```python
-import requests
-import json
+from openai import OpenAI
 
 # Azure OpenAI Configuration
-AZURE_ENDPOINT = "YOUR_AZURE_ENDPOINT"
-API_KEY = "YOUR_API_KEY"
-DEPLOYMENT_NAME = "YOUR_DEPLOYMENT_NAME"
+endpoint = "YOUR_ENDPOINT"
+deployment_name = "YOUR_DEPLOYMENT_NAME"
+api_key = "YOUR_API_KEY"
 
-def call_azure_openai(prompt, temperature=0.7, top_p=1.0, max_tokens=50, 
+client = OpenAI(base_url=endpoint, api_key=api_key)
+
+def call_azure_openai(prompt, temperature=0.7, top_p=1.0, max_completion_tokens=50, 
                       frequency_penalty=0, presence_penalty=0):
     """
     Call Azure OpenAI with specific decoding parameters
     """
-    url = f"{AZURE_ENDPOINT}/openai/deployments/{DEPLOYMENT_NAME}/chat/completions?api-version=2024-02-15-preview"
-    
-    headers = {
-        "Content-Type": "application/json",
-        "api-key": API_KEY
-    }
-    
-    data = {
-        "messages": [
-            {"role": "user", "content": prompt}
-        ],
-        "temperature": temperature,
-        "top_p": top_p,
-        "max_tokens": max_tokens,
-        "frequency_penalty": frequency_penalty,
-        "presence_penalty": presence_penalty
-    }
-    
-    response = requests.post(url, headers=headers, json=data)
-    
-    if response.status_code == 200:
-        result = response.json()
-        return result['choices'][0]['message']['content']
-    else:
-        return f"Error: {response.status_code}"
+    try:
+        response = client.chat.completions.create(
+            model=deployment_name,
+            messages=[
+                {"role": "user", "content": prompt}
+            ],
+            temperature=temperature,
+            top_p=top_p,
+            max_completion_tokens=max_completion_tokens,
+            frequency_penalty=frequency_penalty,
+            presence_penalty=presence_penalty
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        return f"Error: {e}"
 
 def demo_temperature():
     """
@@ -99,7 +90,7 @@ def demo_temperature():
         
         # Run twice to show consistency
         for i in range(2):
-            response = call_azure_openai(prompt, temperature=temp, max_tokens=50)
+            response = call_azure_openai(prompt, temperature=temp, max_completion_tokens=50)
             print(f"  Run {i+1}: {response[:100]}...")
     
     print("\n💡 Key Observations:")
@@ -139,11 +130,11 @@ def demo_top_k_top_p():
     print(f"Prompt: {prompt}")
     
     # Top-p = 0.1 (very restrictive)
-    response1 = call_azure_openai(prompt, temperature=0.7, top_p=0.1, max_tokens=5)
+    response1 = call_azure_openai(prompt, temperature=0.7, top_p=0.1, max_completion_tokens=5)
     print(f"  top_p=0.1 (restrictive): {response1}")
     
     # Top-p = 1.0 (no restriction)
-    response2 = call_azure_openai(prompt, temperature=0.7, top_p=1.0, max_tokens=5)
+    response2 = call_azure_openai(prompt, temperature=0.7, top_p=1.0, max_completion_tokens=5)
     print(f"  top_p=1.0 (unrestricted): {response2}")
     
     print("\n💡 Key Point:")
@@ -177,12 +168,12 @@ def demo_greedy_vs_sampling():
     
     print("Greedy (temperature=0) - 3 runs:")
     for i in range(3):
-        response = call_azure_openai(prompt, temperature=0, max_tokens=10)
+        response = call_azure_openai(prompt, temperature=0, max_completion_tokens=10)
         print(f"  Run {i+1}: {response}")
     
     print("\nSampling (temperature=1.0) - 3 runs:")
     for i in range(3):
-        response = call_azure_openai(prompt, temperature=1.0, max_tokens=10)
+        response = call_azure_openai(prompt, temperature=1.0, max_completion_tokens=10)
         print(f"  Run {i+1}: {response}")
     
     print("\n💡 Key Observations:")
@@ -215,13 +206,13 @@ def demo_repetition_penalties():
     print("Without penalty (frequency_penalty=0, presence_penalty=0):")
     response1 = call_azure_openai(prompt, temperature=0.7, 
                                   frequency_penalty=0, presence_penalty=0,
-                                  max_tokens=100)
+                                  max_completion_tokens=100)
     print(f"{response1}\n")
     
     print("With penalties (frequency_penalty=0.5, presence_penalty=0.5):")
     response2 = call_azure_openai(prompt, temperature=0.7,
                                   frequency_penalty=0.5, presence_penalty=0.5,
-                                  max_tokens=100)
+                                  max_completion_tokens=100)
     print(f"{response2}\n")
     
     print("💡 Key Observations:")

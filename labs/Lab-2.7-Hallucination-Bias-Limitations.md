@@ -37,36 +37,27 @@ notepad llm_limitations.py
 ### Step 2: Write the Exploration Code
 
 ```python
-import requests
-import json
+from openai import OpenAI
 
 # Azure OpenAI Configuration
-AZURE_ENDPOINT = "YOUR_AZURE_ENDPOINT"
-API_KEY = "YOUR_API_KEY"
-DEPLOYMENT_NAME = "YOUR_DEPLOYMENT_NAME"
+endpoint = "YOUR_ENDPOINT"
+deployment_name = "YOUR_DEPLOYMENT_NAME"
+api_key = "YOUR_API_KEY"
 
-def call_azure_openai(messages, temperature=0.7, max_tokens=200):
+client = OpenAI(base_url=endpoint, api_key=api_key)
+
+def call_azure_openai(messages, temperature=0.7, max_completion_tokens=200):
     """Call Azure OpenAI API"""
-    url = f"{AZURE_ENDPOINT}/openai/deployments/{DEPLOYMENT_NAME}/chat/completions?api-version=2024-02-15-preview"
-    
-    headers = {
-        "Content-Type": "application/json",
-        "api-key": API_KEY
-    }
-    
-    data = {
-        "messages": messages,
-        "temperature": temperature,
-        "max_tokens": max_tokens
-    }
-    
-    response = requests.post(url, headers=headers, json=data)
-    
-    if response.status_code == 200:
-        result = response.json()
-        return result['choices'][0]['message']['content']
-    else:
-        return f"Error: {response.status_code}"
+    try:
+        response = client.chat.completions.create(
+            model=deployment_name,
+            messages=messages,
+            temperature=temperature,
+            max_completion_tokens=max_completion_tokens
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        return f"Error: {e}"
 
 def demo_hallucination():
     """

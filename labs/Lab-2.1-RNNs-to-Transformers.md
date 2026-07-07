@@ -46,13 +46,14 @@ Copy this code into `rnn_vs_transformer.py`:
 
 ```python
 import time
-import requests
-import json
+from openai import OpenAI
 
 # Azure OpenAI Configuration
-AZURE_ENDPOINT = "YOUR_AZURE_ENDPOINT"  # e.g., https://your-resource.openai.azure.com/
-API_KEY = "YOUR_API_KEY"
-DEPLOYMENT_NAME = "YOUR_DEPLOYMENT_NAME"  # e.g., gpt-4o
+endpoint = "YOUR_ENDPOINT"  # e.g., https://your-resource.openai.azure.com/openai/v1
+deployment_name = "YOUR_DEPLOYMENT_NAME"  # e.g., gpt-4o
+api_key = "YOUR_API_KEY"
+
+client = OpenAI(base_url=endpoint, api_key=api_key)
 
 # Test sentences demonstrating long-range dependencies
 sentences = [
@@ -63,31 +64,22 @@ sentences = [
 
 def call_azure_openai(prompt):
     """Call Azure OpenAI API"""
-    url = f"{AZURE_ENDPOINT}/openai/deployments/{DEPLOYMENT_NAME}/chat/completions?api-version=2024-02-15-preview"
-    
-    headers = {
-        "Content-Type": "application/json",
-        "api-key": API_KEY
-    }
-    
-    data = {
-        "messages": [
-            {"role": "system", "content": "You are a helpful assistant. Answer briefly."},
-            {"role": "user", "content": prompt}
-        ],
-        "max_tokens": 50
-    }
-    
-    start_time = time.time()
-    response = requests.post(url, headers=headers, json=data)
-    end_time = time.time()
-    
-    if response.status_code == 200:
-        result = response.json()
-        answer = result['choices'][0]['message']['content']
+    try:
+        start_time = time.time()
+        response = client.chat.completions.create(
+            model=deployment_name,
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant. Answer briefly."},
+                {"role": "user", "content": prompt}
+            ],
+            max_completion_tokens=50
+        )
+        end_time = time.time()
+        
+        answer = response.choices[0].message.content
         return answer, end_time - start_time
-    else:
-        return f"Error: {response.status_code}", 0
+    except Exception as e:
+        return f"Error: {e}", 0
 
 # Main demonstration
 print("=" * 60)
